@@ -1,0 +1,8 @@
+services:
+  mh-status:
+    build: .
+    image: mh-status
+    container_name: mh-status
+    restart: unless-stopped
+    ports:
+      - "42426:8080"

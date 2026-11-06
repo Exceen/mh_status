@@ -80,6 +80,11 @@ def _ssl_context():
     return ctx
 
 
+def clock(when=None):
+    """12-hour time without a leading zero: '5:41 PM'."""
+    return time.strftime("%I:%M %p", time.localtime(when)).lstrip("0")
+
+
 def http_get(url, timeout=15):
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     with urllib.request.urlopen(req, timeout=timeout, context=_ssl_context()) as resp:
@@ -348,7 +353,7 @@ def layout(games, cols, st, me, show_default):
 
 def brand_line(brand, brand_rgb, st):
     badge = st.badge(brand_rgb, " %s " % brand)
-    return badge if "Monster Hunter" in brand else badge + st.bold(" Monster Hunter ")
+    return badge if "Gathering Halls" in brand else badge + st.bold(" Gathering Halls ")
 
 
 def sections_of(snap):

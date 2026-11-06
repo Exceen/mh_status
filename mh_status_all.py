@@ -53,7 +53,7 @@ def fetch(file=None):
             failures += 1
             if s["id"] in _last:
                 snap, when = _last[s["id"]]
-                err = "%s · showing data from %s" % (err, time.strftime("%H:%M", time.localtime(when)))
+                err = "%s · showing data from %s" % (err, ui.clock(when))
             else:
                 snap = {"games": []}
         sections.append({"id": s["id"], "brand": s["brand"], "rgb": s["rgb"],
@@ -67,6 +67,6 @@ def fetch(file=None):
 
 
 if __name__ == "__main__":
-    ui.main(fetch, brand="Monster Hunter", brand_rgb=(200, 205, 215), default_interval=60,
+    ui.main(fetch, brand="Gathering Halls", brand_rgb=(200, 205, 215), default_interval=60,
             source="socom.cc + hunstermonter.net",
             description="SOCOM and HunsterVerse Monster Hunter gathering halls, one row per server")

@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MH Halls">
+<meta name="theme-color" content="#14161b">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="64x64" href="/favicon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<title>Gathering Halls</title>
+<style>
+:root {
+  --bg: #14161b;
+  --card: #1b1e25;
+  --line: #2a2e38;
+  --text: #d7dae0;
+  --muted: #808696;
+  --faint: #4e5360;
+  --sep: #a5acbc;
+  --best: #78cd6e;
+  --good: #e8be4b;
+  --full: #e15550;
+  --defaults: #aa96e1;
+  --error: #e2574c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); }
+body {
+  font: 15px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  padding: env(safe-area-inset-top) max(12px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  -webkit-text-size-adjust: 100%;
+}
+button, input { font: inherit; color: inherit; }
+
+/* top bar */
+header {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 0 10px; background: var(--bg);
+}
+header h1 { font-size: 17px; margin: 0; font-weight: 700; letter-spacing: .2px; }
+#status {
+  margin-left: auto; color: var(--muted); font-size: 13px;
+  font-variant-numeric: tabular-nums; background: none; border: 0; padding: 6px 4px;
+}
+#status.loading { color: var(--text); }
+#status.error { color: var(--error); }
+.icon-btn {
+  width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--card); display: grid; place-items: center; padding: 0;
+}
+.icon-btn svg { width: 18px; height: 18px; stroke: var(--text); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+/* settings */
+#settings {
+  display: none; background: var(--card); border: 1px solid var(--line);
+  border-radius: 12px; padding: 12px; margin-bottom: 12px;
+}
+#settings.open { display: grid; gap: 12px; }
+#settings label.field { display: grid; gap: 4px; color: var(--muted); font-size: 13px; }
+#settings input[type=text] {
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+  padding: 8px 10px; font-size: 16px; /* 16px stops iOS from zooming in */
+}
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px;
+  background: var(--bg); font-size: 14px; color: var(--muted);
+}
+.chip[aria-pressed=true] { color: var(--bg); background: var(--c, var(--text)); border-color: var(--c, var(--text)); font-weight: 600; }
+
+/* servers */
+.server { margin-top: 14px; }
+.server-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.badge {
+  color: var(--bg); background: var(--c); font-weight: 700; font-size: 13px;
+  border-radius: 5px; padding: 2px 7px;
+}
+.server-head .stats { color: var(--muted); font-size: 13px; }
+.server-head .stats b { color: var(--text); }
+.server-head .err { color: var(--error); font-size: 13px; flex-basis: 100%; }
+.games { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); align-items: start; }
+
+/* game card */
+.game {
+  background: var(--card); border-radius: 12px; overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--c) 35%, var(--line));
+}
+.game-head {
+  display: flex; align-items: baseline; gap: 8px; padding: 9px 12px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.game-head h2 { margin: 0; font-size: 15px; color: var(--c); }
+.game-head .stats { margin-left: auto; color: var(--muted); font-size: 13px; }
+.game-head .stats b { color: var(--text); font-weight: 600; }
+.empty { color: var(--muted); padding: 10px 12px; font-size: 14px; }
+
+.hall {
+  display: grid; grid-template-columns: auto auto 1fr; column-gap: 10px;
+  align-items: start; padding: 7px 12px; border-top: 1px solid rgba(255,255,255,.04);
+}
+.hall:first-of-type { border-top: 0; }
+.hall.me { background: color-mix(in srgb, var(--c) 10%, transparent); }
+.label {
+  font-weight: 700; color: var(--c); font-variant-numeric: tabular-nums;
+  min-width: 2.2em; text-align: right; padding: 0 3px; border-radius: 4px;
+}
+.hall.me .label { background: var(--c); color: var(--bg); }
+.pips { letter-spacing: 1px; color: var(--muted); white-space: nowrap; font-size: 14px; }
+.pips.best { color: var(--best); }
+.pips.good { color: var(--good); }
+.pips.full { color: var(--full); }
+.pips .free { opacity: .55; }
+.names { min-width: 0; }
+.names .item {     /* a name and its separator wrap as one piece */
+  display: inline-block; max-width: 100%; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis; vertical-align: bottom;
+}
+.names .sep { color: var(--sep); font-weight: 700; padding: 0 5px; }
+.names .is-me { color: var(--c); font-weight: 700; }
+.names .default { color: var(--faint); }
+.names .count { color: var(--defaults); font-weight: 700; }
+.note { grid-column: 3; color: var(--muted); font-size: 13px; }
+.note::before { content: "↳ "; color: var(--faint); }
+
+#message { color: var(--muted); padding: 24px 0; text-align: center; }
+#message.error { color: var(--error); }
+footer { color: var(--faint); font-size: 12px; margin-top: 20px; text-align: center; }
+footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Gathering Halls</h1>
+  <button id="status" type="button" aria-label="Refresh now">…</button>
+  <button id="gear" class="icon-btn" type="button" aria-label="Settings" aria-expanded="false">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </button>
+</header>
+
+<section id="settings" aria-label="Settings">
+  <label class="field">Your nickname (highlighted, decides the colours)
+    <input id="me" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. Exceen">
+  </label>
+  <div class="chips" id="games">
+    <button class="chip" type="button" data-game="p3" style="--c:#4fc3c7">Portable 3rd</button>
+    <button class="chip" type="button" data-game="fu" style="--c:#f2a541">Freedom Unite</button>
+    <button class="chip" type="button" data-game="f1" style="--c:#e2574c">Freedom 1</button>
+  </div>
+  <div class="chips">
+    <button class="chip" type="button" id="opt-ppsspp">PPSSPP names</button>
+    <button class="chip" type="button" id="opt-empty">Hide games without halls</button>
+  </div>
+</section>
+
+<main id="content"><div id="message">Loading…</div></main>
+<footer><a href="/lite">lite version</a></footer>
+
+<script>
+"use strict";
+const STORE = "mh-status-settings";
+const GAMES = ["p3", "fu", "f1"];
+
+function loadSettings() {
+  let s = {};
+  try { s = JSON.parse(localStorage.getItem(STORE) || "{}"); } catch (e) {}
+  const p = new URLSearchParams(location.search);       // ?me=...&only=... wins
+  if (p.has("me")) s.me = p.get("me");
+  if (p.has("only")) s.only = p.get("only").split(",").map(x => x.trim()).filter(Boolean);
+  return { me: s.me || "", only: Array.isArray(s.only) && s.only.length ? s.only : GAMES.slice(),
+           ppsspp: !!s.ppsspp, hideEmpty: !!s.hideEmpty };
+}
+function saveSettings() {
+  try { localStorage.setItem(STORE, JSON.stringify(settings)); } catch (e) {}
+}
+
+let settings = loadSettings();
+let data = null, updatedAt = 0, nextAt = 0, loading = false, lastError = null;
+
+const $ = id => document.getElementById(id);
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+function stats(hunters, halls) {
+  const s = el("span", "stats");
+  s.append(el("b", null, String(hunters)), " hunters · ", el("b", null, String(halls)), halls === 1 ? " hall" : " halls");
+  return s;
+}
+
+function renderHall(h) {
+  const row = el("div", "hall" + (h.has_me ? " me" : ""));
+  row.append(el("span", "label", h.label));
+
+  const pips = el("span", "pips" + (h.rating ? " " + h.rating : ""));
+  if (h.capacity <= 6) {
+    pips.append("●".repeat(Math.min(h.count, h.capacity)));
+    if (h.capacity > h.count) pips.append(el("span", "free", "○".repeat(h.capacity - h.count)));
+  } else {
+    pips.textContent = h.count + "/" + h.capacity;
+  }
+  pips.title = h.count + " of " + h.capacity;
+  row.append(pips);
+
+  const names = el("span", "names");
+  const items = h.players.map(p => el("span", p.me ? "is-me" : null, p.name));
+  if (h.defaults.length) {
+    if (settings.ppsspp) h.defaults.forEach(n => items.push(el("span", "default", n)));
+    else items.push(el("span", "count", "+" + h.defaults.length));
+  }
+  if (!items.length) items.push(el("span", "default", "(hidden)"));
+  items.forEach((n, i) => {
+    const item = el("span", "item");
+    item.append(n);
+    if (i < items.length - 1) item.append(el("span", "sep", "·"));
+    names.append(item);       // inline-blocks can wrap between each other
+  });
+  row.append(names);
+  if (h.note) row.append(el("span", "note", h.note));
+  return row;
+}
+
+function render() {
+  const main = $("content");
+  if (!data) return;
+  main.replaceChildren();
+  for (const sec of data.sections) {
+    const box = el("section", "server");
+    box.style.setProperty("--c", sec.color);
+    const head = el("div", "server-head");
+    head.append(el("span", "badge", sec.brand), stats(sec.hunters, sec.hall_count));
+    if (sec.note) head.append(el("span", "stats", "(" + sec.note + ")"));
+    if (sec.error) head.append(el("span", "err", "⚠ " + sec.error));
+    box.append(head);
+
+    const grid = el("div", "games");
+    if (!sec.games.length) grid.append(el("div", "empty", sec.error ? "no data yet" : "no matching games"));
+    for (const g of sec.games) {
+      const card = el("article", "game");
+      card.style.setProperty("--c", g.color);
+      const gh = el("div", "game-head");
+      gh.append(el("h2", null, g.title), stats(g.users, g.halls.length));
+      card.append(gh);
+      if (!g.halls.length) card.append(el("div", "empty", "no open halls right now"));
+      g.halls.forEach(h => card.append(renderHall(h)));
+      grid.append(card);
+    }
+    box.append(grid);
+    main.append(box);
+  }
+}
+
+function showStatus() {
+  const s = $("status");
+  s.className = loading ? "loading" : (lastError ? "error" : "");
+  if (loading) { s.textContent = "⟳ refreshing"; return; }
+  const left = Math.max(0, Math.round((nextAt - Date.now()) / 1000));
+  const time = updatedAt ? new Date(updatedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }) : "";
+  s.textContent = lastError ? "⚠ " + lastError + " · ↻ " + left + "s" : time + " · ↻ " + left + "s";
+}
+
+function query() {
+  const p = new URLSearchParams();
+  if (settings.me) p.set("me", settings.me);
+  if (settings.only.length < GAMES.length) p.set("only", settings.only.join(","));
+  if (settings.hideEmpty) p.set("hide_empty", "1");
+  return p.toString();
+}
+
+async function refresh() {
+  if (loading) return;
+  loading = true; showStatus();
+  let wait = 60;
+  try {
+    const r = await fetch("/status.json?" + query(), { cache: "no-store" });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || ("HTTP " + r.status));
+    data = j; updatedAt = Date.parse(j.updated) || Date.now(); lastError = null;
+    wait = j.refresh || 60;
+    render();
+  } catch (e) {
+    lastError = navigator.onLine === false ? "offline" : (e.message || "failed");
+    wait = 20;
+    if (!data) { const m = $("message"); if (m) { m.className = "error"; m.textContent = "⚠ " + lastError; } }
+  }
+  loading = false;
+  nextAt = Date.now() + wait * 1000;
+  showStatus();
+}
+
+function tick() {
+  if (document.hidden) return;
+  if (!loading && Date.now() >= nextAt) refresh();
+  else showStatus();
+}
+
+/* settings UI */
+function syncSettingsUI() {
+  $("me").value = settings.me;
+  document.querySelectorAll("#games .chip").forEach(c => c.setAttribute("aria-pressed", settings.only.includes(c.dataset.game)));
+  $("opt-ppsspp").setAttribute("aria-pressed", settings.ppsspp);
+  $("opt-empty").setAttribute("aria-pressed", settings.hideEmpty);
+}
+function changed(refetch) {
+  saveSettings(); syncSettingsUI();
+  if (refetch) { nextAt = 0; refresh(); } else render();
+}
+$("gear").addEventListener("click", () => {
+  const open = $("settings").classList.toggle("open");
+  $("gear").setAttribute("aria-expanded", open);
+});
+let meTimer = null;
+$("me").addEventListener("input", e => {
+  settings.me = e.target.value.trim();
+  clearTimeout(meTimer);
+  meTimer = setTimeout(() => changed(true), 500);
+});
+document.querySelectorAll("#games .chip").forEach(c => c.addEventListener("click", () => {
+  const k = c.dataset.game;
+  const on = settings.only.includes(k);
+  if (on && settings.only.length === 1) return;          // keep at least one game
+  settings.only = on ? settings.only.filter(x => x !== k) : GAMES.filter(x => x === k || settings.only.includes(x));
+  changed(true);
+}));
+$("opt-ppsspp").addEventListener("click", () => { settings.ppsspp = !settings.ppsspp; changed(false); });
+$("opt-empty").addEventListener("click", () => { settings.hideEmpty = !settings.hideEmpty; changed(true); });
+$("status").addEventListener("click", () => { nextAt = 0; refresh(); });
+
+/* coming back to the app (home screen apps are frozen in the background) */
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && Date.now() - updatedAt > 15000) { nextAt = 0; refresh(); }
+});
+
+syncSettingsUI();
+if (!settings.me) $("settings").classList.add("open");
+refresh();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>
